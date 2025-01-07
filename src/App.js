@@ -1,32 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import './App.css';
 import languageList from './languages.json';
 
+const FETCH_ERROR_MESSAGE = "Failed to fetch repositories";
+
 function App() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [randomRepo, setRandomRepo] = useState(null);
 
-  useEffect(() => {
-    const fetchRepositories = async () => {
+  const fetchRepositories = useCallback(
+    async () => {
       setIsLoading(true);
       setError(null);
       setRandomRepo(null);
   
       try {
         const response = await fetch(
-          `https://api.github.com/search/repositories?q=language:${selectedLanguage}&sort=stars&order=desc`,
-          {
-            headers: {
-              Accept: "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
-          }
+          `https://api.github.com/search/repositories?q=language=${selectedLanguage}&sort=stars&order=desc`,
+          
         );
   
         if (!response.ok) {
-          throw new Error("Failed to fetch repositories");
+          setError(FETCH_ERROR_MESSAGE)
+          return
         }
   
         const data = await response.json();
@@ -34,7 +32,6 @@ function App() {
   
         if (repos.length > 0) {
           const randomIndex = Math.floor(Math.random() * repos.length);
-          console.log(repos[randomIndex]);
           setRandomRepo(repos[randomIndex]);
         } else {
           setRandomRepo(null);
@@ -44,13 +41,15 @@ function App() {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [selectedLanguage]);
+
+  useEffect(() => {
 
     if (selectedLanguage) {
       fetchRepositories();
     }
 
-  }, [selectedLanguage]);
+  }, [selectedLanguage, fetchRepositories]);
 
   return (
     <div className="random-repo-app ff-montserrat">
@@ -64,7 +63,8 @@ function App() {
         selectedLanguage={selectedLanguage}
         randomRepo={randomRepo}
         error={error} 
-        isLoading={isLoading} 
+        isLoading={isLoading}
+        onRetry={fetchRepositories}
       />
     </div>
   );
@@ -89,14 +89,14 @@ function DropdownComp({ languageList, selectedLanguage, setSelectedLanguage }) {
   };
   
   const handleSelect = (language) => {
-    setSelectedLanguage(language);
+    setSelectedLanguage(language.value);
     setIsOpen(false);
   };
 
   return (
     <div style={{ position: "relative" }}>
       <div
-        className="dropdown-selected"
+        className="dropdown-selected fw-500"
         onClick={toggleDropdown}
       >
         <span>{selectedLanguage ? selectedLanguage : 'Select language'}</span>
@@ -105,15 +105,15 @@ function DropdownComp({ languageList, selectedLanguage, setSelectedLanguage }) {
 
       {isOpen && (
         <ul className="dropdown-list">
-          {["Select language", "Python", "Javascript", "PHP"].map((language) => (
+          {[{label: "Select language", value: ''}, {label: "Python", value: "Python"}, {label: "Javascript", value: "Javascript"}, {label: "PHP", value: "PHP"}].map((language) => (
             <li
-              key={language}
+              key={language.label}
               onClick={() => handleSelect(language)}
               className="dropdown-item"
               onMouseEnter={(e) => (e.target.style.backgroundColor = "#f0f0f0")}
               onMouseLeave={(e) => (e.target.style.backgroundColor = "#fff")}
             >
-              {language}
+              {language.label}
             </li>
           ))}
         </ul>
@@ -122,7 +122,11 @@ function DropdownComp({ languageList, selectedLanguage, setSelectedLanguage }) {
   );
 }
 
-function Result({ isLoading, error, selectedLanguage, randomRepo }) {
+function Result({ isLoading, error, selectedLanguage, randomRepo, onRetry }) {
+  const formatter = (num) => {
+    return new Intl.NumberFormat("en-US").format(num);
+  }
+
   return (
     <div className='results-container'>
       { isLoading ?
@@ -145,9 +149,9 @@ function Result({ isLoading, error, selectedLanguage, randomRepo }) {
                       {randomRepo.name}
                     </a>
                   </h3>
-                  <p>{randomRepo.description}</p>
+                  <p className='desc'>{randomRepo.description}</p>
                   <p>
-                    ⭐ {randomRepo.stargazers_count} | 🍴 {randomRepo.forks_count}
+                    🎈 {randomRepo.language || selectedLanguage} | ⭐ {formatter(randomRepo.stargazers_count)} | 🍴 {formatter(randomRepo.forks_count)} | ❗ {formatter(randomRepo.open_issues_count)}
                   </p>
                 </div>
               ) : (
@@ -158,9 +162,11 @@ function Result({ isLoading, error, selectedLanguage, randomRepo }) {
         )
       }
 
-      <button className={error ? 'btn error' : 'btn'}>
-        {!isLoading && !error ? 'Refresh' : 'Click to retry'}
-      </button>
+      {(!isLoading && selectedLanguage) && (
+        <button className={error ? 'btn error' : 'btn'} onClick={onRetry}>
+          {!isLoading && !error ? 'Refresh' : 'Click to retry'}
+        </button>
+      )}
     </div>
   );
 }
