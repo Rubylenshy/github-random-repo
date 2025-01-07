@@ -6,16 +6,66 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [randomRepo, setRandomRepo] = useState(null);
 
-  useEffect( function () {
-    // console.log(typeof(Object.keys(languageList)))
-  }, []);
+  useEffect(() => {
+    const fetchRepositories = async () => {
+      setIsLoading(true);
+      setError(null);
+      setRandomRepo(null);
+  
+      try {
+        const response = await fetch(
+          `https://api.github.com/search/repositories?q=language:${selectedLanguage}&sort=stars&order=desc`,
+          {
+            headers: {
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          }
+        );
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch repositories");
+        }
+  
+        const data = await response.json();
+        const repos = data.items;
+  
+        if (repos.length > 0) {
+          const randomIndex = Math.floor(Math.random() * repos.length);
+          console.log(repos[randomIndex]);
+          setRandomRepo(repos[randomIndex]);
+        } else {
+          setRandomRepo(null);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (selectedLanguage) {
+      fetchRepositories();
+    }
+
+  }, [selectedLanguage]);
 
   return (
     <div className="random-repo-app ff-montserrat">
       <Header />
-      <DropdownComp languageList={languageList} selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
-      <Result selectedLanguage={selectedLanguage} error={error} isLoading={isLoading} />
+      <DropdownComp 
+        languageList={languageList} 
+        selectedLanguage={selectedLanguage} 
+        setSelectedLanguage={setSelectedLanguage} 
+      />
+      <Result 
+        selectedLanguage={selectedLanguage}
+        randomRepo={randomRepo}
+        error={error} 
+        isLoading={isLoading} 
+      />
     </div>
   );
 }
@@ -28,15 +78,16 @@ function Header() {
       </div>
       <h2>Github Repository Finder</h2>
     </header>
-  )
+  );
 }
 
-function DropdownComp(languageList, selectedLanguage, setSelectedLanguage) {
+function DropdownComp({ languageList, selectedLanguage, setSelectedLanguage }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
+  
   const handleSelect = (language) => {
     setSelectedLanguage(language);
     setIsOpen(false);
@@ -53,8 +104,8 @@ function DropdownComp(languageList, selectedLanguage, setSelectedLanguage) {
       </div>
 
       {isOpen && (
-        <ul className="dropdown-list" >
-          {["Python", "Javascript", "PHP"].map((language) => (
+        <ul className="dropdown-list">
+          {["Select language", "Python", "Javascript", "PHP"].map((language) => (
             <li
               key={language}
               onClick={() => handleSelect(language)}
@@ -71,7 +122,7 @@ function DropdownComp(languageList, selectedLanguage, setSelectedLanguage) {
   );
 }
 
-function Result(isLoading, error, selectedLanguage) {
+function Result({ isLoading, error, selectedLanguage, randomRepo }) {
   return (
     <div className='results-container'>
       { isLoading ?
@@ -79,23 +130,39 @@ function Result(isLoading, error, selectedLanguage) {
           Loading, please wait ...
         </div> : (
           !selectedLanguage ?
-          <div className='pre-loading-state state-container'>
+          <div className='pre-loading-state state-container text-center'>
             Please select a language
           </div> : (
             error ?
-            <div className='error-state state-container'>
+            <div className='error-state state-container text-center'>
               Error fetching repositories
             </div> : 
             <div className='repo-details'>
-    
+              {randomRepo ? (
+                <div className="repo-card" key={randomRepo.id}>
+                  <h3>
+                    <a href={randomRepo.html_url} target="_blank" rel="noopener noreferrer">
+                      {randomRepo.name}
+                    </a>
+                  </h3>
+                  <p>{randomRepo.description}</p>
+                  <p>
+                    ⭐ {randomRepo.stargazers_count} | 🍴 {randomRepo.forks_count}
+                  </p>
+                </div>
+              ) : (
+                <div>No repositories found.</div>
+              )}
             </div>
           )
         )
       }
 
-      <button className={error ? 'btn error' : 'btn'}>{!isLoading && !error ? 'Refresh' : 'Click to retry'}</button>
+      <button className={error ? 'btn error' : 'btn'}>
+        {!isLoading && !error ? 'Refresh' : 'Click to retry'}
+      </button>
     </div>
-  )
+  );
 }
 
 export default App;
