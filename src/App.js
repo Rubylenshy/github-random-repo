@@ -390,15 +390,29 @@ function Header() {
 
 function DropdownComp({ languageLists, selectedLanguage, setSelectedLanguage }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredList, setFilteredList] = useState(languageLists);
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
+
+    if (!isOpen) {
+      setSearchQuery('');
+    }
   };
   
   const handleSelect = (language) => {
     setSelectedLanguage(language.value);
     setIsOpen(false);
   };
+
+  useEffect(() => {
+    if (searchQuery !== '') {
+      setFilteredList(languageLists.filter((lang) => lang.value.toLowerCase().includes(searchQuery.toLowerCase())));
+    } else {
+      setFilteredList(languageLists);
+    }
+  }, [searchQuery, languageLists]);
 
   return (
     <div style={{ position: "relative" }}>
@@ -411,22 +425,33 @@ function DropdownComp({ languageLists, selectedLanguage, setSelectedLanguage }) 
       </div>
 
       {isOpen && (
-        <ul className="dropdown-list">
-          {languageLists.map((language) => (
-            <li
-              key={language.title}
-              onClick={() => handleSelect(language)}
-              className="dropdown-item"
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#f0f0f0")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "#fff")}
-            >
-              {language.title}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="dropdown-list">
+            <SearchComponent searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            {filteredList.map((language) => (
+              <li
+                key={language.title}
+                onClick={() => handleSelect(language)}
+                className="dropdown-item"
+                onMouseEnter={(e) => (e.target.style.backgroundColor = "#f0f0f0")}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "#fff")}
+              >
+                {language.title}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
+}
+
+function SearchComponent({ searchQuery, setSearchQuery }) {
+  return (
+    <div className="search-component">
+      <input type='text' placeholder='Search' className='ff-montserrat' value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
+    </div>
+  )
 }
 
 function Result({ isLoading, error, selectedLanguage, randomRepo, onRetry }) {
