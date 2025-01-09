@@ -6,6 +6,10 @@ A GitHub repository finder that allows users to select a programming language fr
 
 ---
 
+### 🔗 Project Link
+
+[https://roadmap.sh/projects/github-random-repo](https://roadmap.sh/projects/github-random-repo)
+
 ## 🛠️ Tech Stack  
 
 - **Frontend**: React, HTML, CSS  
