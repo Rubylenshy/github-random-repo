@@ -18,7 +18,7 @@ A GitHub repository finder that allows users to select a programming language fr
 - Step 1: Clone the repository  
 
   ```bash
-  git clone https://github.com/username/repo-name.git
+  git clone https://github.com/Rubylenshy/github-random-repo.git
 - Step 2: Install dependencies
 
     ```bash
