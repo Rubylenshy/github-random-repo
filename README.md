@@ -34,6 +34,14 @@ A GitHub repository finder that allows users to select a programming language fr
 
     Access it at http://localhost:3000
 
+### States
+
+![Static State](./public/images/state-0.png)
+![Dropdown State](./public/images/state-1.png)
+![Loading State](./public/images/state-2.png)
+![Results Success State](./public/images/state-3.png)
+![Results Failed State](./public/images/state-4.png)
+
 ### 2️⃣ Contribution
 
 - Fork the repository
